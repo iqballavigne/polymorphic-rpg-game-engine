@@ -54,6 +54,7 @@ This schema provides elegant, deterministic answers to three classic structural 
 
 The production-ready JSON Schema validating character states, polymorphic inventories, and recursive socket structures is embedded below:
 
+```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "RPGGameEngineSchema",
