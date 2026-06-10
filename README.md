@@ -155,3 +155,20 @@ The production-ready JSON Schema validating character states, polymorphic invent
     }
   }
 }
+```
+
+---
+
+## 📊 System Validation Matrix
+
+The following test payloads located in the `tests/` directory validate the engine's error-handling and compliance boundaries:
+
+| Test File | Target Field | Payload State / Value | Expected Outcome | Validation Rule Enforced |
+| :--- | :--- | :--- | :--- | :--- |
+| `valid_character_state.json` | `character_id` | `"CHR-104922"` | **PASS** | Evaluates against regex pattern `^CHR-[0-9]{6}$` |
+| `valid_character_state.json` | `attributes` | All integers between `1` and `100` | **PASS** | Enforces `minimum` and `maximum` numerical boundaries |
+| `valid_character_state.json` | `inventory[0]` | `slot: "weapon"`, has `handedness` & `damage_type` | **PASS** | Complies with Variant 1 of the polymorphic `oneOf` block |
+| `valid_character_state.json` | `socketed_gems[0]` | Re-evaluates generic item schema nested inside weapon | **PASS** | Successfully resolves recursive `#/$defs/game_item` reference |
+| `invalid_character_state.json` | `character_id` | `"CHR-002144"` (Only 4 trailing digits instead of 6) | **FAIL** | Blocked by regex constraint pattern |
+| `invalid_character_state.json` | `inventory[0]` | Declares `slot: "armor"` but provides `damage_type: "slashing"` | **FAIL** | Blocked by `oneOf` logical exclusion (`not: required: ["damage_type"]` for armor) |
+| `invalid_character_state.json` | `requirements` | Declares `"level": 20` but omits `class_restriction` | **FAIL** | Blocked by `dependentRequired` validation rule |
