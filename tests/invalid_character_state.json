@@ -1,0 +1,22 @@
+{
+  "character_id": "CHR-002144",
+  "attributes": {
+    "strength": 10,
+    "agility": 10,
+    "intelligence": 10,
+    "stamina": 10
+  },
+  "inventory": [
+    {
+      "item_id": "ITM-ERR01",
+      "name": "Cursed Broken Mail",
+      "slot": "armor",
+      "durability": { "current": 10, "max": 10 },
+      "defense_rating": 45,
+      "damage_type": "slashing",
+      "requirements": {
+        "level": 20
+      }
+    }
+  ]
+}
