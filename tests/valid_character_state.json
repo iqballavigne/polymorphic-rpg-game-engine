@@ -1,0 +1,38 @@
+{
+  "character_id": "CHR-104922",
+  "attributes": {
+    "strength": 45,
+    "agility": 12,
+    "intelligence": 85,
+    "stamina": 50
+  },
+  "inventory": [
+    {
+      "item_id": "ITM-WPN01",
+      "name": "Spire of the Archmage",
+      "slot": "weapon",
+      "durability": { "current": 48, "max": 50 },
+      "handedness": "two-handed",
+      "damage_type": "magic",
+      "requirements": {
+        "level": 60,
+        "class_restriction": "mage"
+      },
+      "socketed_gems": [
+        {
+          "item_id": "ITM-GEM05",
+          "name": "Flawless Sapphire",
+          "slot": "accessory",
+          "durability": { "current": 1, "max": 1 }
+        }
+      ]
+    },
+    {
+      "item_id": "ITM-ARM02",
+      "name": "Vanguard Chestplate",
+      "slot": "armor",
+      "durability": { "current": 100, "max": 100 },
+      "defense_rating": 250
+    }
+  ]
+}
