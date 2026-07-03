@@ -1,5 +1,5 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "RPGGameEngineSchema",
   "description": "Validates state, attributes, and polymorphic recursive inventory logic for an RPG engine.",
   "type": "object",
@@ -23,10 +23,10 @@
     },
     "inventory": {
       "type": "array",
-      "items": { "$ref": "#/$defs/game_item" }
+      "items": { "$ref": "#/definitions/game_item" }
     }
   },
-  "$defs": {
+  "definitions": {
     "game_item": {
       "type": "object",
       "required": ["item_id", "name", "slot"],
@@ -51,23 +51,23 @@
             "level": { "type": "integer", "minimum": 1 },
             "class_restriction": { "type": "string", "enum": ["warrior", "mage", "rogue"] }
           },
-          "dependentRequired": {
+          "dependencies": {
             "level": ["class_restriction"]
           }
         },
         "socketed_gems": {
           "type": "array",
-          "items": { "$ref": "#/$defs/game_item" },
+          "items": { "$ref": "#/definitions/game_item" },
           "maxItems": 3
-        }
+        },
+        "handedness": { "type": "string", "enum": ["one-handed", "two-handed"] },
+        "damage_type": { "type": "string", "enum": ["slashing", "piercing", "bludgeoning", "magic"] },
+        "defense_rating": { "type": "integer", "minimum": 1 }
       },
       "oneOf": [
         {
-          "dependentComment": "Variant 1: Weapon Sub-Schema",
           "properties": {
-            "slot": { "const": "weapon" },
-            "handedness": { "type": "string", "enum": ["one-handed", "two-handed"] },
-            "damage_type": { "type": "string", "enum": ["slashing", "piercing", "bludgeoning", "magic"] }
+            "slot": { "const": "weapon" }
           },
           "required": ["handedness", "damage_type"],
           "not": {
@@ -75,10 +75,8 @@
           }
         },
         {
-          "dependentComment": "Variant 2: Armor Sub-Schema",
           "properties": {
-            "slot": { "const": "armor" },
-            "defense_rating": { "type": "integer", "minimum": 1 }
+            "slot": { "const": "armor" }
           },
           "required": ["defense_rating"],
           "not": {
@@ -86,7 +84,6 @@
           }
         },
         {
-          "dependentComment": "Variant 3: Accessory Sub-Schema",
           "properties": {
             "slot": { "const": "accessory" }
           },
