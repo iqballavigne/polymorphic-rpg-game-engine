@@ -52,13 +52,13 @@ This framework provides elegant, deterministic answers to three classic structur
 
 ---
 
-## 📜 Production Schema Engine
+## 🛡️ Polymorphic RPG Engine Validation Layer
 
-The production-ready JSON Schema validating character states, polymorphic inventories, and recursive socket structures is embedded below:
+The core state engine of the RPG system is governed by a strict **Draft-07 JSON Schema**. The configuration models characters, base physical attributes, and a deeply nested, polymorphic recursive inventory management system designed to guarantee data sanity inside runtime game loops.
 
-```json
+```
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "RPGGameEngineSchema",
   "description": "Validates state, attributes, and polymorphic recursive inventory logic for an RPG engine.",
   "type": "object",
@@ -82,10 +82,10 @@ The production-ready JSON Schema validating character states, polymorphic invent
     },
     "inventory": {
       "type": "array",
-      "items": { "$ref": "#/$defs/game_item" }
+      "items": { "$ref": "#/definitions/game_item" }
     }
   },
-  "$defs": {
+  "definitions": {
     "game_item": {
       "type": "object",
       "required": ["item_id", "name", "slot"],
@@ -110,23 +110,23 @@ The production-ready JSON Schema validating character states, polymorphic invent
             "level": { "type": "integer", "minimum": 1 },
             "class_restriction": { "type": "string", "enum": ["warrior", "mage", "rogue"] }
           },
-          "dependentRequired": {
+          "dependencies": {
             "level": ["class_restriction"]
           }
         },
         "socketed_gems": {
           "type": "array",
-          "items": { "$ref": "#/$defs/game_item" },
+          "items": { "$ref": "#/definitions/game_item" },
           "maxItems": 3
-        }
+        },
+        "handedness": { "type": "string", "enum": ["one-handed", "two-handed"] },
+        "damage_type": { "type": "string", "enum": ["slashing", "piercing", "bludgeoning", "magic"] },
+        "defense_rating": { "type": "integer", "minimum": 1 }
       },
       "oneOf": [
         {
-          "dependentComment": "Variant 1: Weapon Sub-Schema",
           "properties": {
-            "slot": { "const": "weapon" },
-            "handedness": { "type": "string", "enum": ["one-handed", "two-handed"] },
-            "damage_type": { "type": "string", "enum": ["slashing", "piercing", "bludgeoning", "magic"] }
+            "slot": { "const": "weapon" }
           },
           "required": ["handedness", "damage_type"],
           "not": {
@@ -134,10 +134,8 @@ The production-ready JSON Schema validating character states, polymorphic invent
           }
         },
         {
-          "dependentComment": "Variant 2: Armor Sub-Schema",
           "properties": {
-            "slot": { "const": "armor" },
-            "defense_rating": { "type": "integer", "minimum": 1 }
+            "slot": { "const": "armor" }
           },
           "required": ["defense_rating"],
           "not": {
@@ -145,7 +143,6 @@ The production-ready JSON Schema validating character states, polymorphic invent
           }
         },
         {
-          "dependentComment": "Variant 3: Accessory Sub-Schema",
           "properties": {
             "slot": { "const": "accessory" }
           },
@@ -163,14 +160,13 @@ The production-ready JSON Schema validating character states, polymorphic invent
 
 ## 📊 System Validation Matrix
 
-The following test payloads located in the `tests/` directory validate the engine's error-handling and compliance boundaries:
+The engine utilizes automated test fixtures to map simulated player profiles and inventory state data against the explicit conditional boundaries of the polymorphic game schema.
 
-| Test File | Target Field | Payload State / Value | Expected Outcome | Validation Rule Enforced |
+| Test File | Target Coordinate | Input Payload State | Expected Outcome | Active Constraint Evaluated |
 | :--- | :--- | :--- | :--- | :--- |
-| `valid_character_state.json` | `character_id` | `"CHR-104922"` | **PASS** | Evaluates against regex pattern `^CHR-[0-9]{6}$` |
-| `valid_character_state.json` | `attributes` | All integers between `1` and `100` | **PASS** | Enforces `minimum` and `maximum` numerical boundaries |
-| `valid_character_state.json` | `inventory[0]` | `slot: "weapon"`, has `handedness` & `damage_type` | **PASS** | Complies with Variant 1 of the polymorphic `oneOf` block |
-| `valid_character_state.json` | `socketed_gems[0]` | Re-evaluates generic item schema nested inside weapon | **PASS** | Successfully resolves recursive `#/$defs/game_item` reference |
-| `invalid_character_state.json` | `character_id` | `"CHR-002144"` (Only 4 trailing digits instead of 6) | **FAIL** | Blocked by regex constraint pattern |
-| `invalid_character_state.json` | `inventory[0]` | Declares `slot: "armor"` but provides `damage_type: "slashing"` | **FAIL** | Blocked by `oneOf` logical exclusion (`not: required: ["damage_type"]` for armor) |
-| `invalid_character_state.json` | `requirements` | Declares `"level": 20` but omits `class_restriction` | **FAIL** | Blocked by `dependentRequired` validation rule |
+| `valid_character_state.json` | `character_id` | `"CHR-104922"` | **🟢 PASS** | Matches regex sequence string template (`^CHR-[0-9]{6}$`). |
+| `valid_character_state.json` | `inventory[0]` | Polymorphic item with `"slot": "weapon"` | **🟢 PASS** | Contains mandatory weapon properties (`handedness`, `damage_type`) and excludes armor keys. |
+| `valid_character_state.json` | `inventory[0].requirements` | Contains both `level` and `class_restriction` keys | **🟢 PASS** | Satisfies the schema's property-to-property relational dependency rule. |
+| `valid_character_state.json` | `inventory[0].socketed_gems[0]` | Deeply nested, recursive child node array | **🟢 PASS** | Recursively re-compiles `#/definitions/game_item` constraints cleanly down to a 1-tier depth. |
+| `invalid_character_state.json` | `inventory[0]` | Armor item injecting a rogue `"damage_type"` key | **🔴 FAIL** | Blocked by the strict mutual exclusivity rule inside the polymorphic object's `oneOf` block. |
+| `invalid_character_state.json` | `inventory[0].requirements` | Declares `level` but omits `class_restriction` | **🔴 FAIL** | Violated classical dependency constraint (`"dependencies": {"level": ["class_restriction"]}`). |
