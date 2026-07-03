@@ -4,49 +4,51 @@ An enterprise-grade data configuration blueprint designed for deterministic, sta
 
 ---
 
-## 📐 Data Architecture Flow
+## 📐 Project Overview & Core Architecture
+
+The core state engine of the RPG system converts complex, dynamic player and inventory states into deterministic inputs. This ensures that in-game actions, item equipment checks, and stat calculations run against uncorrupted data models.
 
 ```
-         [ Raw Game State Payload ]
-                     │
-                     ▼
-           [ Game Engine Core ]
-                     │
-                     ▼
-    ┌────────────────────────────────────────┐
-    │     RPGGameEngineSchema Validator      │
-    │  ────────────────────────────────────  │
-    │  • Enforces Regex Character IDs        │
-    │  • Validates Attribute Bounds [1-100]  │
-    │  • Evaluates Polymorphic Array Items   │
-    │  • Resolves Recursive Socketed Gems    │
-    └────────────────────────────────────────┘
-                     │
-            ┌────────┴────────┐
-            │                 │
-            ▼                 ▼
-     [ VALID STATE ]   [ INVALID STATE ]
-            │                 │
-            ▼                 ▼
-     [ State Committed ] [ Action Dropped ]
+    [ Raw Game State Payload ]
+                 │
+                 ▼
+       [ Game Engine Core ]
+                 │
+                 ▼
+┌────────────────────────────────────────┐
+│     RPGGameEngineSchema Validator      │
+│  ────────────────────────────────────  │
+│  • Enforces Regex Character IDs        │
+│  • Validates Attribute Bounds [1-100]  │
+│  • Evaluates Polymorphic Array Items   │
+│  • Resolves Recursive Socketed Gems    │
+└────────────────────────────────────────┘
+                 │
+        ┌────────┴────────┐
+        │                 │
+        ▼                 ▼
+ [ VALID STATE ]   [ INVALID STATE ]
+        │                 │
+        ▼                 ▼
+ [ State Committed ] [ Action Dropped ]
 ```
 ---
 
 ## 🧠 Core Engineering Challenges & Architectural Solutions
 
-This schema provides elegant, deterministic answers to three classic structural problems found in gaming data layers:
+This framework provides elegant, deterministic answers to three classic structural problems found in complex gaming data layers:
 
 ### 1. The Polymorphic Object Dilemma
-* **The Problem:** Game items share core attributes (`item_id`, `name`, `slot`) but possess mutually exclusive properties depending on their type (e.g., a sword has `damage_type`, but a shield has `defense_rating`). Poor schemas allow items to manifest invalid combinations, like an armored shield that shoots magical bullets.
-* **The Solution:** Implemented a robust `oneOf` conditional array paired with explicit `not` constraints. This guarantees that if an item establishes its slot as `armor`, the engine strictly rejects any weapon or accessory keys at the gateway.
+* **The Problem:** Game items share core attributes (`item_id`, `name`, `slot`) but possess mutually exclusive properties depending on their type (e.g., a sword has `damage_type`, but a chestplate has `defense_rating`). Weak schemas allow items to manifest invalid combinations, like an armored shield that accidentally shoots magical bullets.
+* **The Solution:** Implemented a robust object-level `oneOf` conditional array paired with explicit `not` constraints. All polymorphic variant fields are hoisted to the parent definition to maintain compilation visibility under strict mode, ensuring that if an item establishes its slot as `armor`, the engine strictly rejects weapon configurations.
 
 ### 2. The Recursive Nesting Stack Overflow
-* **The Problem:** Equipment in RPGs often contains sockets for enhancement items (gems, runes), which are technically items themselves. Hardcoding nested layers locks down flexibility and bloats schemas.
-* **The Solution:** Leveraged a **recursive pointer architecture**. By defining `socketed_gems` to reference `#/$defs/game_item` directly within its own definition, the schema evaluates gems using the exact same constraints as primary equipment, capped safely at a maximum of three structural iterations.
+* **The Problem:** Equipment in RPGs often contains sockets for enhancement items (gems, runes), which are structurally identical to items themselves. Hardcoding nested layers locks down design flexibility and creates massive schema bloat.
+* **The Solution:** Leveraged a **recursive pointer architecture**. By defining `socketed_gems` to reference `#/definitions/game_item` directly within its own definition, the validation engine evaluates gems using the exact same constraints as primary equipment, capped safely at a maximum array length of three iterations.
 
 ### 3. Co-Dependent Property Constraints
-* **The Problem:** Certain items require specific minimum player parameters to equip, but entering incomplete requirements (like establishing a level restriction without checking for class limits) introduces game-breaking state bugs.
-* **The Solution:** Utilized `dependentRequired` property binds. If a level constraint is specified inside an item's configuration object, the validation engine automatically mandates a corresponding `class_restriction` block.
+* **The Problem:** Certain items require specific minimum player parameters to equip, but entering incomplete requirements (like establishing a level restriction without specifying a class limitation) introduces catastrophic state bugs.
+* **The Solution:** Utilized standard Draft-07 `dependencies` property mapping. If a `level` restriction constraint is specified inside an item's requirements configuration object, the validation engine automatically mandates a corresponding `class_restriction` string array.
 
 ---
 
