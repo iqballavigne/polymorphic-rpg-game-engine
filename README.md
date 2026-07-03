@@ -170,3 +170,19 @@ The engine utilizes automated test fixtures to map simulated player profiles and
 | `valid_character_state.json` | `inventory[0].socketed_gems[0]` | Deeply nested, recursive child node array | **🟢 PASS** | Recursively re-compiles `#/definitions/game_item` constraints cleanly down to a 1-tier depth. |
 | `invalid_character_state.json` | `inventory[0]` | Armor item injecting a rogue `"damage_type"` key | **🔴 FAIL** | Blocked by the strict mutual exclusivity rule inside the polymorphic object's `oneOf` block. |
 | `invalid_character_state.json` | `inventory[0].requirements` | Declares `level` but omits `class_restriction` | **🔴 FAIL** | Violated classical dependency constraint (`"dependencies": {"level": ["class_restriction"]}`). |
+
+---
+## 🌐 Semantic Graph Architecture
+
+To complement edge-level JSON validation, the RPG engine synchronizes state data into a centralized, queryable Knowledge Graph using W3C Semantic Web standards. This transforms static player snapshots into web-ready semantic profiles, allowing developers to query gameplay analytics, character gear profiles, and cross-item dependencies using graph query languages.
+
+### 🧠 Ontological Architecture (TBox vs. ABox)
+
+The ontology structure splits game engine information into two logical data spaces:
+* **The TBox (Terminology Box):** Declares the core gaming vocabulary. It establishes the conceptual entities (`rpg:Character`, `rpg:GameItem`) and maps the boundaries of how properties can interact (e.g., ensuring an item's `defense_rating` can only be attached to an item entity).
+* **The ABox (Assertion Box):** Captures the precise instance state of live entities. It populates the graph with active player identifiers (`char:CHR-104922`) and maps out their current attributes and inventory links, mirroring the exact state verified by the JSON testing pipeline.
+
+### 🎯 Graph Structural Equivalents to Schema Constraints
+
+* **Polymorphic Property Attenuation:** While the JSON Schema utilizes an object-level `oneOf` switch to filter out illegal armor/weapon cross-contamination at runtime, the semantic layer maps these properties as datatype predicates directly under the `rpg:GameItem` domain. This lets the data store maintain a flexible, flat graph structure while application-level queries handle class definitions.
+* **Recursive Reference Resolution:** The recursive property mapping defined in your JSON Schema (`#/definitions/game_item`) is replicated by setting the range of the socket predicate (`rpg:hasSocketedGem`) to point directly back to the `rpg:GameItem` class. This creates an infinite nesting loop capability in graph space, bounded naturally by the three-item limit checked during JSON validation.
