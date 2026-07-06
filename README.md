@@ -186,3 +186,152 @@ The ontology structure splits game engine information into two logical data spac
 
 * **Polymorphic Property Attenuation:** While the JSON Schema utilizes an object-level `oneOf` switch to filter out illegal armor/weapon cross-contamination at runtime, the semantic layer maps these properties as datatype predicates directly under the `rpg:GameItem` domain. This lets the data store maintain a flexible, flat graph structure while application-level queries handle class definitions.
 * **Recursive Reference Resolution:** The recursive property mapping defined in your JSON Schema (`#/definitions/game_item`) is replicated by setting the range of the socket predicate (`rpg:hasSocketedGem`) to point directly back to the `rpg:GameItem` class. This creates an infinite nesting loop capability in graph space, bounded naturally by the three-item limit checked during JSON validation.
+
+### 🕸️ The Semantic Inventory Topology (`rpg-inventory.ttl`)
+```
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix rpg:   <http://api.rpg-engine.internal/ontology#> .
+@prefix char:  <http://api.rpg-engine.internal/characters#> .
+@prefix item:  <http://api.rpg-engine.internal/items#> .
+
+### 1. TBOX: ONTOLOGICAL FRAMEWORK (The Classes)
+rpg:Character rdf:type rdfs:Class ;
+    rdfs:label "Game Character Instance" ;
+    rdfs:comment "A unique character entity managing core attributes and dynamic inventory states." .
+
+rpg:Attributes rdf:type rdfs:Class ;
+    rdfs:label "Character Attribute Block" .
+
+rpg:GameItem rdf:type rdfs:Class ;
+    rdfs:label "Inventory Game Item" .
+
+rpg:ItemRequirements rdf:type rdfs:Class ;
+    rdfs:label "Item Equipping Restrictions" .
+
+### 2. TBOX: RELATIONSHIPS & BOUNDARIES (The Properties)
+# --- Object Properties (Entity to Entity links) ---
+rpg:hasAttributes rdf:type rdf:Property ;
+    rdfs:domain rpg:Character ;
+    rdfs:range rpg:Attributes .
+
+rpg:hasInventoryItem rdf:type rdf:Property ;
+    rdfs:domain rpg:Character ;
+    rdfs:range rpg:GameItem .
+
+rpg:hasRequirements rdf:type rdf:Property ;
+    rdfs:domain rpg:GameItem ;
+    rdfs:range rpg:ItemRequirements .
+
+rpg:hasSocketedGem rdf:type rdf:Property ;
+    rdfs:domain rpg:GameItem ;
+    rdfs:range rpg:GameItem . # Recursive Blueprint Mirror
+
+# --- Datatype Properties (Entity to Literal Value links) ---
+rpg:characterId rdf:type rdf:Property ;
+    rdfs:domain rpg:Character ;
+    rdfs:range xsd:string .
+
+rpg:strength rdf:type rdf:Property ;
+    rdfs:domain rpg:Attributes ;
+    rdfs:range xsd:integer .
+
+rpg:agility rdf:type rdf:Property ;
+    rdfs:domain rpg:Attributes ;
+    rdfs:range xsd:integer .
+
+rpg:intelligence rdf:type rdf:Property ;
+    rdfs:domain rpg:Attributes ;
+    rdfs:range xsd:integer .
+
+rpg:stamina rdf:type rdf:Property ;
+    rdfs:domain rpg:Attributes ;
+    rdfs:range xsd:integer .
+
+rpg:itemId rdf:type rdf:Property ;
+    rdfs:domain rpg:GameItem ;
+    rdfs:range xsd:string .
+
+rpg:itemName rdf:type rdf:Property ;
+    rdfs:domain rpg:GameItem ;
+    rdfs:range xsd:string .
+
+rpg:itemSlot rdf:type rdf:Property ;
+    rdfs:domain rpg:GameItem ;
+    rdfs:range xsd:string .
+
+rpg:currentDurability rdf:type rdf:Property ;
+    rdfs:domain rpg:GameItem ;
+    rdfs:range xsd:integer .
+
+rpg:maxDurability rdf:type rdf:Property ;
+    rdfs:domain rpg:GameItem ;
+    rdfs:range xsd:integer .
+
+rpg:handedness rdf:type rdf:Property ;
+    rdfs:domain rpg:GameItem ;
+    rdfs:range xsd:string .
+
+rpg:damageType rdf:type rdf:Property ;
+    rdfs:domain rpg:GameItem ;
+    rdfs:range xsd:string .
+
+rpg:defenseRating rdf:type rdf:Property ;
+    rdfs:domain rpg:GameItem ;
+    rdfs:range xsd:integer .
+
+rpg:requiredLevel rdf:type rdf:Property ;
+    rdfs:domain rpg:ItemRequirements ;
+    rdfs:range xsd:integer .
+
+rpg:classRestriction rdf:type rdf:Property ;
+    rdfs:domain rpg:ItemRequirements ;
+    rdfs:range xsd:string .
+
+### 3. ABOX: LIVE INSTANCE DATA (Synchronized from valid_character_state.json)
+char:CHR-104922 rdf:type rpg:Character ;
+    rpg:characterId "CHR-104922"^^xsd:string ;
+    rpg:hasAttributes char:CHR-104922_Stats ;
+    rpg:hasInventoryItem item:ITM-WPN01 , item:ITM-ARM02 .
+
+char:CHR-104922_Stats rdf:type rpg:Attributes ;
+    rpg:strength "45"^^xsd:integer ;
+    rpg:agility "12"^^xsd:integer ;
+    rpg:intelligence "85"^^xsd:integer ;
+    rpg:stamina "50"^^xsd:integer .
+
+# Polymorphic Weapon Node with Recursive Gem Nesting
+item:ITM-WPN01 rdf:type rpg:GameItem ;
+    rpg:itemId "ITM-WPN01"^^xsd:string ;
+    rpg:itemName "Spire of the Archmage"^^xsd:string ;
+    rpg:itemSlot "weapon"^^xsd:string ;
+    rpg:currentDurability "48"^^xsd:integer ;
+    rpg:maxDurability "50"^^xsd:integer ;
+    rpg:handedness "two-handed"^^xsd:string ;
+    rpg:damageType "magic"^^xsd:string ;
+    rpg:hasRequirements item:ITM-WPN01_Req ;
+    rpg:hasSocketedGem item:ITM-GEM05 .
+
+item:ITM-WPN01_Req rdf:type rpg:ItemRequirements ;
+    rpg:requiredLevel "60"^^xsd:integer ;
+    rpg:classRestriction "mage"^^xsd:string .
+
+# Recursive Leaf Node (Gem treated as a custom accessory inside weapon)
+item:ITM-GEM05 rdf:type rpg:GameItem ;
+    rpg:itemId "ITM-GEM05"^^xsd:string ;
+    rpg:itemName "Flawless Sapphire"^^xsd:string ;
+    rpg:itemSlot "accessory"^^xsd:string ;
+    rpg:currentDurability "1"^^xsd:integer ;
+    rpg:maxDurability "1"^^xsd:integer .
+
+# Polymorphic Armor Node
+item:ITM-ARM02 rdf:type rpg:GameItem ;
+    rpg:itemId "ITM-ARM02"^^xsd:string ;
+    rpg:itemName "Vanguard Chestplate"^^xsd:string ;
+    rpg:itemSlot "armor"^^xsd:string ;
+    rpg:currentDurability "100"^^xsd:integer ;
+    rpg:maxDurability "100"^^xsd:integer ;
+    rpg:defenseRating "250"^^xsd:integer .
+```
+---
