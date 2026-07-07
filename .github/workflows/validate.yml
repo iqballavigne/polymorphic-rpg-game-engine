@@ -1,0 +1,49 @@
+name: RPG Engine State Validation CI
+
+on:
+  push:
+    paths:
+      - 'rpg-engine-schema.json'
+      - 'tests/valid_character_state.json'
+      - 'tests/invalid_character_state.json'
+  pull_request:
+    paths:
+      - 'rpg-engine-schema.json'
+      - 'tests/valid_character_state.json'
+      - 'tests/invalid_character_state.json'
+
+jobs:
+  rpg-state-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository Code
+        uses: actions/checkout@v6
+
+      - name: 🟢 Set up Node.js Runtime
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: 🛠️ Install AJV Validator CLI
+        run: npm install -g ajv-cli
+
+      - name: 🛡️ Assert Valid Character State PASSES
+        run: |
+          echo "Validating 'valid_character_state.json' against the RPG engine schema..."
+          # Validates basic state and complex recursive socketed items
+          ajv validate -s rpg-engine-schema.json -d tests/valid_character_state.json
+
+      - name: 🧪 Assert Invalid Character State FAILS (Negative Testing)
+        run: |
+          echo "Validating 'invalid_character_state.json' to ensure polymorphic constraint enforcement..."
+          
+          # We expect 'ajv validate' to FAIL (exit code > 0) on the bad file.
+          # If it passes (exit code 0), our schema isn't strict enough and our CI pipeline must fail.
+          
+          if ajv validate -s rpg-engine-schema.json -d tests/invalid_character_state.json; then
+            echo "❌ CRITICAL FAILURE: The invalid state (illegal polymorphism) mistakenly PASSED schema validation!"
+            exit 1
+          else
+            echo "✅ SUCCESS: The schema engine successfully blocked the malformed inventory state as expected."
+          fi
