@@ -335,3 +335,69 @@ item:ITM-ARM02 rdf:type rpg:GameItem ;
     rpg:defenseRating "250"^^xsd:integer .
 ```
 ---
+
+## ⚙️ CI/CD Automation & Governance
+
+Dynamic data architectures require automated governance to ensure that recursive logic and polymorphic constraints are strictly enforced before committing changes to the game state. This repository implements a robust continuous integration (CI) pipeline via GitHub Actions, utilizing the cutting-edge **Node.js 24 runtime environment** to strictly compile, validate, and test state configuration assets.
+
+### 🧠 Architectural Pipeline Mechanics
+
+The automation framework executes three foundational engineering design patterns to protect game engine state sanity:
+
+* **Targeted Path-Filtering Optimization:** The workflow relies on declarative triggers. The CI runner only initializes if changes are detected within the core schema dialect (`rpg-engine-schema.json`) or the specific valid/invalid test payloads. This optimization ensures high-performance pipeline execution by eliminating unnecessary compute overhead on documentation or semantic graph modifications.
+* **Polymorphic Positive Controls:** Using the **AJV CLI compiler**, the workflow executes a definitive validation check against the reference positive control (`valid_character_state.json`). This confirms that valid player states, attribute mathematical boundaries, and recursively socketed item trees can cleanly compile under strict mode constraints.
+* **Recursive Negative Testing Inversion:** Crucial for game logic governance, the pipeline explicitly runs custom bash conditional validation against `invalid_character_state.json`. If the malformed payload—which triggers intentional errors like class dependency failures or illegal armor/weapon property combinations—accidentally passes the validator, the pipeline explicitly overrides the success code, throws a critical error log, and forces a hard execution exit (`exit 1`) to flag the safety loophole.
+
+### 📄 Automation Pipeline Configuration (`validate.yml`)
+
+```
+name: RPG Engine State Validation CI
+
+on:
+  push:
+    paths:
+      - 'rpg-engine-schema.json'
+      - 'tests/valid_character_state.json'
+      - 'tests/invalid_character_state.json'
+  pull_request:
+    paths:
+      - 'rpg-engine-schema.json'
+      - 'tests/valid_character_state.json'
+      - 'tests/invalid_character_state.json'
+
+jobs:
+  rpg-state-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository Code
+        uses: actions/checkout@v6
+
+      - name: 🟢 Set up Node.js Runtime
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: 🛠️ Install AJV Validator CLI
+        run: npm install -g ajv-cli
+
+      - name: 🛡️ Assert Valid Character State PASSES
+        run: |
+          echo "Validating 'valid_character_state.json' against the RPG engine schema..."
+          # Validates basic state and complex recursive socketed items
+          ajv validate -s rpg-engine-schema.json -d tests/valid_character_state.json
+
+      - name: 🧪 Assert Invalid Character State FAILS (Negative Testing)
+        run: |
+          echo "Validating 'invalid_character_state.json' to ensure polymorphic constraint enforcement..."
+          
+          # We expect 'ajv validate' to FAIL (exit code > 0) on the bad file.
+          # If it passes (exit code 0), our schema isn't strict enough and our CI pipeline must fail.
+          
+          if ajv validate -s rpg-engine-schema.json -d tests/invalid_character_state.json; then
+            echo "❌ CRITICAL FAILURE: The invalid state (illegal polymorphism) mistakenly PASSED schema validation!"
+            exit 1
+          else
+            echo "✅ SUCCESS: The schema engine successfully blocked the malformed inventory state as expected."
+          fi
+```
